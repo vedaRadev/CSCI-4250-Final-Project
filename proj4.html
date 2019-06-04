@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8"/>
+		<title>Project 4</title>
+	</head>
+
+	<!-- vertex shader -->
+	<script id="vertex-shader" type="x-shader/x-vertex">
+		attribute vec4 aPos;	// position of point
+		attribute vec4 aCol;	// color of a point
+		attribute vec4 aNorm;	// normal of a point
+		attribute vec2 aTex;	// coord of a texture
+
+		varying vec4 vCol;		// color of a point, links to fragment shader
+		varying vec2 vTex;		// coordinate of texture
+
+		uniform mat4 mvMat;		// model view matrix
+		uniform mat4 projMat;	// projection matrix
+
+		uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+		uniform vec4 lightPosition;
+		uniform float shininess;
+
+		void main()
+		{
+			// Calculate lighting for a point
+			vec3 pos = -((mvMat * aPos).xyz);
+			vec3 light = -((mvMat * lightPosition).xyz);
+			vec3 L = normalize(light - pos); // light source direction
+
+			vec3 E = normalize(-pos); // eye - point location (eye at origin of frame)
+			vec3 H = normalize(L + E); // halfway vector between light dir and eye position vectors
+
+			// transform vertex normal to eye coords
+			vec3 N = normalize((mvMat * aNorm).xyz);
+
+			// compute terms in illumination equation
+			// ambient
+			vec4 ambient = ambientProduct;
+
+			// diffuse
+			float kd = max(dot(L, N), 0.0);
+			vec4 diffuse = kd * diffuseProduct;
+
+			// specular
+			float ks = pow(max(dot(N, H), 0.0), shininess);
+			vec4 specular = ks * specularProduct;
+
+			if (dot(L, N) < 0.0) specular = vec4(0.0, 0.0, 0.0, 1.0);
+
+			gl_Position = projMat * mvMat * aPos;
+			vCol = ambient + diffuse + specular;
+			vCol.a = 1.0;
+
+			vTex = aTex;
+		}
+	</script>
+
+	<!-- fragment shader -->
+	<script id="fragment-shader" type="x-shader/x-fragment">
+			precision mediump float;
+
+			varying vec4 vCol;
+			varying vec2 vTex;
+
+			uniform sampler2D texture;
+
+			void main()
+			{
+				gl_FragColor = vCol * texture2D(texture, vTex);
+			}
+	</script>
+
+	<body onload="main()">
+		<canvas id="gl-canvas" style="cursor: grabbing" oncontextmenu="return false" width="800" height="800">
+			Your browser doesn't support the HTML5 canvas element!
+		</canvas>
+
+		<!-- buttons -->
+		<button id="thetaup">Increase theta</button>
+		<button id="thetadown">Decrease theta</button>
+		<button id="phiup">Increase phi</button>
+		<button id="phidown">Decrease phi</button>
+
+		<p></p>
+		Hold and move LMB to rotate<br>
+		Hold and move RMB to pan<br>
+		Scroll mousewheel to zoom in/out<br>
+
+		<!-- scripts -->
+		<script type="text/javascript" src="../Common/webgl-utils.js"></script>
+		<script type="text/javascript" src="../Common/initShaders.js"></script>
+		<script type="text/javascript" src="../Common/MV.js"></script>
+		<script type="text/javascript" src="proj4.js"></script>
+	</body>
+</html>
